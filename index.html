@@ -1,1 +1,74 @@
-Hello World
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Box Office Line Chart (2019–2020)</title>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    .line {
+      fill: none;
+      stroke: steelblue;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <svg width="900" height="500"></svg>
+
+  <script>
+    const svg = d3.select("svg"),
+          margin = { top: 40, right: 40, bottom: 50, left: 80 },
+          width = +svg.attr("width") - margin.left - margin.right,
+          height = +svg.attr("height") - margin.top - margin.bottom;
+
+    const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const parseDate = d3.timeParse("%m/%d/%Y");
+    const parseDollar = d => +d.replace(/[\$,]/g, "");
+
+    const x = d3.scaleTime().range([0, width]);
+    const y = d3.scaleLinear().range([height, 0]);
+
+    const line = d3.line()
+      .x(d => x(d.week_begin_date))
+      .y(d => y(d.overall_gross));
+
+    const csvUrl = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_summary_2015_2025.csv";
+
+    d3.csv(csvUrl, function(row) {
+      // Parse each row before the full data is returned
+      if (row.year === "2019" || row.year === "2020") {
+        row.week_begin_date = parseDate(row.week_begin_date);
+        row.overall_gross = parseDollar(row.overall_gross);
+        return row;
+      }
+    }).then(function(data) {
+      // Remove any undefined rows (non-2019/2020)
+      data = data.filter(d => d && d.week_begin_date && !isNaN(d.overall_gross));
+
+      // Sort chronologically
+      data.sort((a, b) => a.week_begin_date - b.week_begin_date);
+
+      // Set domains
+      x.domain(d3.extent(data, d => d.week_begin_date));
+      y.domain([0, d3.max(data, d => d.overall_gross)]);
+
+      // Add x-axis
+      g.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x));
+
+      // Add y-axis
+      g.append("g")
+        .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+
+      // Add line path
+      g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .attr("d", line);
+    }).catch(function(error) {
+      console.error("Error loading CSV:", error);
+    });
+  </script>
+</body>
+</html>
