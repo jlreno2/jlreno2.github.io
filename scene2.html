@@ -1,7 +1,174 @@
 <html>
-    <container>
+
+<head>
+  <meta charset="utf-8">
+  <h1>Recovery of the Film Industry Post-Covid</h1>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root {
+        --primary-color: #023047;
+        --secondary-color: #5DB7DE;
+        --tertiary-color: #606c38;
+        --highlight-color: #ffba49;
+        --background-color: #e8dab2;
+    }
+    .controls {
+      margin-bottom: 20px;
+    }
+    .checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .line {
+      fill: none;
+      stroke-width: 2px;
+    }
+    .legend rect {
+      width: 12px;
+      height: 12px;
+    }
+    .legend text {
+      font-size: 12px;
+      alignment-baseline: middle;
+    }
+  </style>
+</head>
+
+  <div class="topnav">
+    <a href="index.html">Home</a>
+    <a href="scene1.html">As a Timeline</a>
+    <a class="active" href="scene2.html">Overall Box Office Revenue</a>
+    <a href="scene3.html">Per Release Revenue</a>
+  </div>
+  
+  <div class="container">
+    <div class="column" style="width:50%">
+        
+        <div class="controls">
+            <label><strong>Select years to display:</strong></label>
+            <div class="checkboxes" id="year-checkboxes"></div>
+        </div>
+
+        <svg width="900" height="500"></svg>
+
+        <script>
+            function getColor(year) {
+                if (year <= 2019) return getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim();
+                else if (year === 2020) return getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
+                else return getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim();  
+            }
+            const svg = d3.select("svg"),
+            margin = { top: 40, right: 40, bottom: 50, left: 80 },
+            width = +svg.attr("width") - margin.left - margin.right,
+            height = +svg.attr("height") - margin.top - margin.bottom;
+
+            const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const parseDate = d3.timeParse("%m/%d/%Y");
+            const parseDollar = d => +d.replace(/[\$,]/g, "");
+
+            const x = d3.scaleLinear().range([0, width]);
+            const y = d3.scaleLinear().range([height, 0]);
+
+            const line = d3.line()
+                .x(d => x(d.week))
+                .y(d => y(d.overall_gross));
+
+            const csvUrl = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_summary_2015_2025.csv";
+
+            d3.csv(csvUrl, function(row) {
+                row.year = +row.year;
+                row.week_begin_date = parseDate(row.week_begin_date);
+                row.week = +row.week_nbr;
+                row.overall_gross = parseDollar(row.overall_gross);
+                return row;
+            }).then(function(data) {
+                data = data.filter(d => d.week && !isNaN(d.overall_gross));
+                x.domain([1, 53]);
+                y.domain([0, d3.max(data, d => d.overall_gross)]);
+
+                g.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x).ticks(12).tickFormat(d => `Wk ${d}`));
+
+                g.append("g")
+                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+
+                const dataByYear = d3.nest().key(d => d.year).entries(data);
+                const yearSet = dataByYear.map(d => d.key).sort();
+                const checkboxContainer = d3.select("#year-Checkboxes");
+                const pathGroup = g.append("g");
+
+                const currentVisible = new Set();
+
+                yearSet.forEach(year => {
+                    const label = checkboxContainer.append("label").style("margin-right", "12px");
+                    label.append("input")
+                    .attr("type", "checkbox")
+                    .attr("value", year)
+                    .on("change", function() {
+                        const yearKey = this.value;
+                        if (this.checked) {
+                        if (!currentVisible.has(yearKey)) {
+                            drawLine(yearKey);
+                            currentVisible.add(yearKey);
+                        }
+                        } else {
+                        pathGroup.select(`#line-${yearKey}`).remove();
+                        currentVisible.delete(yearKey);
+                        }
+                    });
+                    label.append("span").text(` ${year}`);
+                });
+
+                function drawLine(yearKey) {
+                    const yearData = dataByYear.find(d => d.key === yearKey).values
+                    .filter(d => d.week)
+                    .sort((a, b) => a.week - b.week);
+
+                    const path = pathGroup.append("path")
+                    .datum(yearData)
+                    .attr("id", `line-${yearKey}`)
+                    .attr("fill", "none")
+                    .attr("stroke", getColor(+yearKey))
+                    .attr("stroke-width", 2)
+                    .attr("d", line);
+
+                    const totalLength = path.node().getTotalLength();
+
+                    path
+                    .attr("stroke-dasharray", totalLength + " " + totalLength)
+                    .attr("stroke-dashoffset", totalLength)
+                    .transition()
+                    .duration(1500)
+                    .ease(d3.easeLinear)
+                    .attr("stroke-dashoffset", 0);
+                }
+
+                // Optional: pre-select default years
+                const defaultYears = ["2019", "2020", "2021"];
+                checkboxContainer.selectAll("input").each(function() {
+                    if (defaultYears.includes(this.value)) {
+                    this.checked = true;
+                    drawLine(this.value);
+                    currentVisible.add(this.value);
+                    }
+                });
+            });
+        </script>
+
+    </div>
+
+    <div class="column" style="width:50%">
         <p>
-            This is text. I don't know where it will be.
+            To understand recovery of the domestic film industry revenue, 
+            we need to understand patterns before the disruption in 2020. 
         </p>
-    </container>
+    </div>
+    
+  </div>
+
 </html>

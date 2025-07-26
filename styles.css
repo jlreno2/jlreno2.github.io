@@ -6,13 +6,20 @@
     --highlight-color: #ffba49;
     --background-color: #e8dab2;
 }
+h1 {
+    font-size: 1.5em;
+    font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif;
+    text-align: center;
+    padding: 20px;
+}
 .container {
     display: flex;
     flex-direction: row;
     padding: 20px;
     gap: 40px;
     font-family: Arial, sans-serif;
-    font-size: 18px;
+    font-size: 17px;
 }
 /* Navigation bar */
 .topnav {
