@@ -1,0 +1,140 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Box Office Line Chart (2019–2020)</title>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    /* define color palette */
+    :root {
+      --primary-color: #023047;
+      --secondary-color: #5DB7DE;
+      --tertiary-color: #606c38;
+      --highlight-color: #ffba49;
+      --background-color: #e8dab2;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      padding: 20px;
+      gap: 40px;
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+    }
+    /* Navigation bar */
+    .topnav {
+      background-color: var(--primary-color);
+      overflow: hidden;
+    }
+    .topnav a { /* Style the links inside the navigation bar */
+      float: left;
+      color: var(--background-color);
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+      font-family: Arial, sans-serif;
+    }
+    .topnav a:hover { /* Change the color of links on hover */
+      background-color: var(--highlight-color);
+      color: black;
+    }
+    .topnav a.active { /* Add a color to the active/current link */
+      background-color: var(--tertiary-color);
+      color: var(--background-color);
+    }
+    /* For line graph */
+    .line {
+      fill: none;
+      stroke: var(--primary-color);
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topnav">
+    <a class="active" href="#scene1">What Happened in 2020</a>
+    <a href="#scene2">Overall Box Office Revenue</a>
+    <a href="#scene3">Per Release Revenue</a>
+  </div>
+
+  <div class="container">
+    
+    <div class="column" style="width:50%">
+      <p>
+        In 2020, the film industry was one of many industries shuttered by COVID-19 lockdowns.
+        Theaters closed worldwide, box office revenue plummeted, and major studios were forced to rethink distribution strategies. 
+        One of the most significant shifts during this period was the increase in direct-to-streaming releases, as platforms such as Netflix 
+        grew massively. This change not only altered how audiences consumed films but also raised questions about the long-term role of theatrical releases.
+        Today, more than five years since the initial shutdowns, has the industry recovered?
+      </p>
+      <p>
+        This analysis explores weekly box office revenue before and after the pandemic to assess whether the film industry has rebounded, 
+        or if it is still navigating a permanently altered landscape.
+      </p>
+    </div>
+
+    <div class="column" style="width:50%">
+      <svg width="900" height="500"></svg>
+
+      <script>
+        const svg = d3.select("svg"),
+        margin = { top: 40, right: 40, bottom: 50, left: 80 },
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
+
+        const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const parseDate = d3.timeParse("%m/%d/%Y");
+        const parseDollar = d => +d.replace(/[\$,]/g, "");
+
+        const x = d3.scaleTime().range([0, width]);
+        const y = d3.scaleLinear().range([height, 0]);
+
+        const line = d3.line()
+          .x(d => x(d.week_begin_date))
+          .y(d => y(d.overall_gross));
+
+        const csvUrl = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_summary_2015_2025.csv";
+
+        d3.csv(csvUrl, function(row) {
+          // Parse each row before the full data is returned
+          if (row.year === "2019" || row.year === "2020") {
+            row.week_begin_date = parseDate(row.week_begin_date);
+            row.overall_gross = parseDollar(row.overall_gross);
+            return row;
+          }
+        }).then(function(data) {
+          data = data.filter(d => d && d.week_begin_date && !isNaN(d.overall_gross));
+          data.sort((a, b) => a.week_begin_date - b.week_begin_date);
+          x.domain(d3.extent(data, d => d.week_begin_date));
+          y.domain([0, d3.max(data, d => d.overall_gross)]);
+
+          g.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x));
+
+          g.append("g")
+            .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+          
+          // Add line path with transition
+          const path = g.append("path")
+            .datum(data)
+            .attr("class", "line")
+            .attr("d", line);
+          const totalLength = path.node().getTotalLength();
+          path.attr("stroke-dasharray",totalLength+" "+totalLength)
+            .attr("stroke-dashoffset",totalLength)
+            .transition()
+            .duration(5000)
+            .ease(d3.easeLinear)
+            .attr("stroke-dashoffset",0);
+
+        }).catch(function(error) {
+          console.error("Error loading CSV:", error);
+        });
+      </script>
+    </div>
+
+  </div>
+</body>
+</html>
