@@ -11,6 +11,7 @@ h1 {
     font-weight: bold;
     font-family: Arial, Helvetica, sans-serif;
     text-align: center;
+    color: var(--primary-color);
     padding: 20px;
 }
 .container {
@@ -48,4 +49,21 @@ h1 {
     fill: none;
     stroke: var(--primary-color);
     stroke-width: 2px;
+}
+a {
+  text-decoration: none;
+  display: inline-block;
+  padding: 8px 16px;
+}
+.previous {
+  background-color: var(--primary-color);
+  color: var(--background-color);
+}
+.next {
+  background-color: var(--primary-color);
+  color: var(--background-color);
+}
+a:hover {
+  background-color: var(--highlight-color);
+  color: var(--primary-color)
 }

@@ -1,0 +1,112 @@
+<!-- Scene 1B is navigated to by the Next button in Scene 1A. 
+ It shows the same data, but as an average with band -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <h1>Recovery of the Film Industry Post-Covid</h1>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="topnav">
+        <a href="index.html">What Happened in 2020</a>
+        <a class="active" href="scene1A.html">Pre-Pandemic Trends</a>
+        <a href="scene2.html">Recovery: Overall Box Office Revenue</a>
+        <a href="scene3.html">Recovery: Per Release Revenue</a>
+  </div>
+
+  <div class="container">
+    
+    <div class="column" style="width:50%">
+      <svg width="900" height="500"></svg>
+      <script>
+        const margin = { top: 40, right: 40, bottom: 50, left: 80 },
+              width = 900 - margin.left - margin.right,
+              height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select("svg")
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const x = d3.scaleLinear().range([0, width]);
+        const y = d3.scaleLinear().range([height, 0]);
+
+        const line = d3.line()
+          .x(d => x(d.week_nbr))
+          .y(d => y(d.avg_overall_gross));
+
+        const area = d3.area()
+          .x(d => x(d.week_nbr))
+          .y0(d => y(d.min_overall_gross))
+          .y1(d => y(d.max_overall_gross));
+
+        d3.csv("https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_average_2015_2019.csv", d => {
+          return {
+            week_nbr: +d.week_nbr,
+            avg_overall_gross: +d.avg_overall_gross,
+            min_overall_gross: +d.min_overall_gross,
+            max_overall_gross: +d.max_overall_gross
+          };
+        }).then(data => {
+          x.domain(d3.extent(data, d => d.week_nbr));
+          y.domain([0, d3.max(data, d => d.max_overall_gross)]);
+
+          // Area (min-max band)
+          svg.append("path")
+            .datum(data)
+            .attr("class", "area")
+            .attr("d", area);
+
+          // Average line
+          svg.append("path")
+            .datum(data)
+            .attr("class", "line")
+            .attr("d", line);
+
+          // X-axis
+          svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).ticks(10).tickFormat(d3.format("d")))
+            .append("text")
+            .attr("class", "axis-label")
+            .attr("x", width / 2)
+            .attr("y", 40)
+            .attr("fill", "#000")
+            .text("Week Number");
+
+          // Y-axis
+          svg.append("g")
+            .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`))
+            .append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", -50)
+            .attr("fill", "#000")
+            .text("Overall Gross");
+        }).catch(error => {
+          console.error("Error loading CSV:", error);
+        });
+      </script>
+    </div>
+
+    <!-- Next we'll add text about the "immediate" pre-during-post covid timeline -->
+    <div class="column"> 
+      <p>
+        This is text about the trendline.
+        Here we'll call out the dates of initial shutdowns.
+        Point out the top earning movies in 2019.
+      </p>
+      <p>
+        Discuss the beginnings of recovery in 2021. Top earning movie.
+      </p>
+      
+      <a href="scene1A.html" class="previous">&laquo; Previous</a>
+      <a href="scene2.html" class="next">Next &raquo;</a>
+
+    </div>
+
+  </div>
+</body>
+</html>

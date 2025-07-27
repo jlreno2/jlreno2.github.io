@@ -1,41 +1,25 @@
+<!-- Scene 1A investigates the pre-2020 trends and creates an average weekly revenue chart 
+ that we use to compare with post-2020 revenue -->
 <html>
-
 <head>
   <meta charset="utf-8">
   <h1>Recovery of the Film Industry Post-Covid</h1>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .controls {
-      margin-bottom: 20px;
-    }
-    .checkboxes {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .legend rect {
-      width: 12px;
-      height: 12px;
-    }
-    .legend text {
-      font-size: 12px;
-      alignment-baseline: middle;
-    }
-  </style>
 </head>
 
+<body>
   <div class="topnav">
         <a href="index.html">What Happened in 2020</a>
-        <a href="scene1A.html">Pre-Pandemic Trends</a>
-        <a class="active" href="scene2.html">Recovery: Overall Box Office Revenue</a>
+        <a class="active" href="scene1A.html">Pre-Pandemic Trends</a>
+        <a href="scene2.html">Recovery: Overall Box Office Revenue</a>
         <a href="scene3.html">Recovery: Per Release Revenue</a>
   </div>
-  
+
   <div class="container">
+    
     <div class="column" style="width:50%">
-        
+              
         <div class="controls">
             <label><strong>Select years to display:</strong></label>
             <div class="checkboxes" id="year-checkboxes"></div>
@@ -148,22 +132,24 @@
                 });
             });
         </script>
+    </div>
+
+    <!-- Next we'll add text about the "immediate" pre-during-post covid timeline -->
+    <div class="column"> 
+      <p>
+        This is text about the trendline.
+        Here we'll call out the dates of initial shutdowns.
+        Point out the top earning movies in 2019.
+      </p>
+      <p>
+        Discuss the beginnings of recovery in 2021. Top earning movie.
+      </p>
+      
+      <a href="index.html" class="previous">&laquo; Previous</a>
+      <a href="scene1B.html" class="next">Next &raquo;</a>
 
     </div>
 
-    <!-- Here is our paragraph explaining the 2021 onward -->
-    <div class="column" style="width:50%">
-        <p>
-            In this graph we compare the trends noted in the years since 2020 to the average prior.
-        </p>
-        <p>
-            Select individual years to see how they compare to the pre-2020 average.
-        </p>
-        <a href="scene1B.html" class="previous">&laquo; Previous</a>
-        <a href="scene3.html" class="next">Next &raquo;</a>
-
-    </div>
-    
   </div>
-
+</body>
 </html>
