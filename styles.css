@@ -1,8 +1,9 @@
 /* define color palette */
 :root {
     --primary-color: #023047;
-    --secondary-color: #5DB7DE;
+    --secondary-color: #8ecae6;
     --tertiary-color: #606c38;
+    --accent-color: #d33f49;
     --highlight-color: #ffba49;
     --background-color: #e8dab2;
 }
@@ -66,4 +67,9 @@ a {
 a:hover {
   background-color: var(--highlight-color);
   color: var(--primary-color)
+}
+.button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
 }

@@ -1,7 +1,6 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <h1>Recovery of the Film Industry Post-Covid</h1>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <link rel="stylesheet" href="styles.css">
     <!-- color palette 
@@ -13,9 +12,11 @@
 
 </head>
 <body>
+    <h1>Recovery of the Film Industry Post-Covid</h1>
+
     <div class="topnav">
         <a class="active" href="index.html">What Happened in 2020</a>
-        <a href="scene1A.html">Pre-Pandemic Trends</a>
+        <a href="scene1.html">Pre-Pandemic Trends</a>
         <a href="scene2.html">Recovery: Overall Box Office Revenue</a>
         <a href="scene3.html">Recovery: Per Release Revenue</a>
     </div>
@@ -73,7 +74,7 @@
                 path.attr("stroke-dasharray",totalLength+" "+totalLength)
                     .attr("stroke-dashoffset",totalLength)
                     .transition()
-                    .duration(4000)
+                    .duration(3000)
                     .ease(d3.easeLinear)
                     .attr("stroke-dashoffset",0);
 
@@ -99,7 +100,14 @@
                 We'll focus on domestic box office revenue for the United States. 
                 Data is sourced from ****WEBSITE HERE****
             </p>
-            <a href="scene1A.html" class="next">Next &raquo;</a>
+            <p>
+                To start, here we'll call out the dates of initial shutdowns.
+            </p>
+            <p>
+                Point out the top earning movies in 2019. 
+                Discuss the beginnings of recovery in 2021 & first big-earning week.
+            </p>
+            <a href="scene1.html" class="next">Next &raquo;</a>
         </div>
         
     </div>

@@ -2,33 +2,173 @@
 
 <head>
   <meta charset="utf-8">
-  <h1>Recovery of the Film Industry Post-Covid</h1>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 
-  <div class="topnav">
+<body>
+    <h1>Recovery of the Film Industry Post-Covid</h1>
+    
+    <div class="topnav">
         <a href="index.html">What Happened in 2020</a>
-        <a href="scene1A.html">Pre-Pandemic Trends</a>
+        <a href="scene1.html">Pre-Pandemic Trends</a>
         <a href="scene2.html">Recovery: Overall Box Office Revenue</a>
         <a class="active" href="scene3.html">Recovery: Per Release Revenue</a>
-  </div>
-  
-  <div class="container">
-    <div class="column" style="width:50%">
-        Here will be a graph
     </div>
 
-    <div class="column" style="width:50%">
-        <p>
-            This is the third scene. Wohoo
-        </p>
+    <div class="container">
+        <div class="column" style="width:50%">
+
+            <!-- Checkboxes -->
+            <div class="controls">
+                <label><strong>Select years to display:</strong></label>
+                <div class="checkboxes" id="year-checkboxes"></div>
+            </div>
+
+            <!-- Charts -->
+            <div class="chart-container" style="position: relative; width: 900px; height: 500px;">
+                <svg id="bubbleChart" width="900" height="500" style="position: absolute; top: 0; left: 0; z-index: 1;"></svg>
+            </div>
+
+            <!-- Script section -->
+            <script>
+            const svg1 = d3.select("#bubbleChart")
+                .append("g")
+                .attr("transform", "translate(80,40)");
+
+            function getColor(year) {
+                if (year <= 2019) return getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim();
+                else if (year === 2020) return getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
+                else return getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim();  
+            }
+
+            const margin = { top: 40, right: 40, bottom: 50, left: 80 },
+                    width = 900 - margin.left - margin.right,
+                    height = 500 - margin.top - margin.bottom;
+
+            const x = d3.scaleLinear().range([0, width]);
+            const y = d3.scaleLinear().range([height, 0]);
+            const r = d3.scaleSqrt().range([1, 14]);
+
+            const parseDollar = d => +d.replace(/[\$,]/g, "");
+
+            const csvUrl_all = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_summary_2015_2025.csv";
+
+            d3.csv(csvUrl_all, function(row) {
+                row.year = +row.year;
+                row.week = +row.week_nbr;
+                row.gross_per_release = parseDollar(row.gross_per_release);
+                row.nbr_releases = +row.nbr_releases;
+                return row;
+            }).then(function(data) {
+                x.domain(d3.extent(data, d => d.week));
+                y.domain([0, d3.max(data, d => d.gross_per_release)]);
+                r.domain([0, d3.max(data, d => d.nbr_releases)]);
+
+                svg1.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x).ticks(12).tickFormat(d => `Wk ${d}`));
+
+                svg1.append("g")
+                    .attr("class", "y-axis")
+                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1000).toFixed(0)}k`));
+
+                const dataByYear = d3.nest().key(d => d.year).entries(data);
+                const yearSet = dataByYear.map(d => d.key).sort();
+                const checkboxContainer = d3.select("#year-checkboxes");
+
+                const currentVisible = new Set();
+
+                function updateYAxisAndBubbles() {
+                    const visibleData = Array.from(currentVisible)
+                        .flatMap(yearKey => dataByYear.find(d => d.key === yearKey).values);
+
+                    const newYMax = d3.max(visibleData, d => d.gross_per_release);
+                    y.domain([0, newYMax]);
+
+                    // Update the y-axis
+                    svg1.selectAll(".y-axis").remove();  // Remove old axis
+                    svg1.append("g")
+                        .attr("class", "y-axis")
+                        .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1000).toFixed(0)}k`));
+
+                    // Update bubble positions
+                    currentVisible.forEach(yearKey => {
+                        const yearData = dataByYear.find(d => d.key === yearKey).values;
+                        svg1.selectAll(`.bubble-${yearKey}`)
+                            .data(yearData)
+                            .transition().duration(500)
+                            .attr("cy", d => y(d.gross_per_release))
+                            .attr("r", d => r(d.nbr_releases));
+                    });
+                };
+
+                yearSet.forEach(year => {
+                    const label = checkboxContainer.append("label").style("margin-right", "12px");
+                    label.append("input")
+                        .attr("type", "checkbox")
+                        .attr("value", year)
+                        // .property("checked", true)
+                        .on("change", function() {
+                            const yearKey = this.value;
+                            if (this.checked) {
+                                if (!currentVisible.has(yearKey)) {
+                                    drawBubble(yearKey);
+                                    currentVisible.add(yearKey);
+                                    updateYAxisAndBubbles();
+                                }
+                            } else {
+                                svg1.selectAll(`.bubble-${yearKey}`).remove();
+                                currentVisible.delete(yearKey);
+                                updateYAxisAndBubbles();
+                            }
+                        });
+                    label.append("span").text(` ${year}`);
+                });
+
+                function drawBubble(yearKey) {
+                    const yearData = dataByYear.find(d => d.key === yearKey).values
+                        .filter(d => d.week)
+                        .sort((a, b) => a.week - b.week);
+
+                    svg1.selectAll(`.bubble-${yearKey}`)
+                        .data(yearData)
+                        .enter()
+                        .append("circle")
+                        .attr("class", `bubble-${yearKey}`)
+                        .attr("cx", d => x(d.week))
+                        .attr("cy", d => y(d.gross_per_release))
+                        .attr("r", d => r(d.nbr_releases))
+                        .attr("fill", getColor(+yearKey))
+                        .attr("opacity", 0.6);
+                }
+
+                // Pre-select default years
+                const defaultYears = ["2018","2019","2022","2023","2024"];
+                checkboxContainer.selectAll("input").each(function() {
+                    if (defaultYears.includes(this.value)) {
+                        this.checked = true;
+                        drawBubble(this.value);
+                        currentVisible.add(this.value);
+                    }
+                });
+            });
+            </script>
+
+        </div>
+
+        <div class="column" style="width:50%">
+            <p>
+                This is the third scene. Wohoo
+            </p>
 
         <a href="scene2.html" class="previous">&laquo; Previous</a>
+        </div>
+
     </div>
 
-  </div>
-  
+</body>
+
 </html>
 
 

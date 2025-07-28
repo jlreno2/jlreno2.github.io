@@ -2,7 +2,6 @@
 
 <head>
   <meta charset="utf-8">
-  <h1>Recovery of the Film Industry Post-Covid</h1>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <link rel="stylesheet" href="styles.css">
   <style>
@@ -26,38 +25,42 @@
   </style>
 </head>
 
+<body>
+  <h1>Recovery of the Film Industry Post-Covid</h1>
+    
   <div class="topnav">
         <a href="index.html">What Happened in 2020</a>
-        <a href="scene1A.html">Pre-Pandemic Trends</a>
+        <a href="scene1.html">Pre-Pandemic Trends</a>
         <a class="active" href="scene2.html">Recovery: Overall Box Office Revenue</a>
         <a href="scene3.html">Recovery: Per Release Revenue</a>
   </div>
   
   <div class="container">
     <div class="column" style="width:50%">
-        
+        <!-- Checkboxes -->
         <div class="controls">
             <label><strong>Select years to display:</strong></label>
             <div class="checkboxes" id="year-checkboxes"></div>
         </div>
+        
+        <!-- Charts -->
+        <div class="chart-container" style="position: relative; width: 900px; height: 500px;">
+            <svg id="chart2" width="900" height="500" style="position: absolute; top: 0; left: 0; z-index: 0; opacity: 0.3;"></svg>
+            <svg id="chart1" width="900" height="500" style="position: absolute; top: 0; left: 0; z-index: 1;"></svg>
+        </div>
 
-        <svg width="900" height="500"></svg>
+        <!-- Toggle button -->
+        <div class="button-container">
+            <button id="toggleBtn">Click to remove the pre-Covid revenue</button>
+        </div>
 
         <script>
-            function getColor(year) {
-                if (year <= 2019) return getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim();
-                else if (year === 2020) return getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
-                else return getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim();  
-            }
-            const svg = d3.select("svg"),
-            margin = { top: 40, right: 40, bottom: 50, left: 80 },
-            width = +svg.attr("width") - margin.left - margin.right,
-            height = +svg.attr("height") - margin.top - margin.bottom;
+            const svg1 = d3.select("#chart1").append("g").attr("transform", "translate(80,40)");
+            const svg2 = d3.select("#chart2").append("g").attr("transform", "translate(80,40)");
 
-            const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
-
-            const parseDate = d3.timeParse("%m/%d/%Y");
-            const parseDollar = d => +d.replace(/[\$,]/g, "");
+            const margin = { top: 40, right: 40, bottom: 50, left: 80 },
+                width = 900 - margin.left - margin.right,
+                height = 500 - margin.top - margin.bottom;
 
             const x = d3.scaleLinear().range([0, width]);
             const y = d3.scaleLinear().range([height, 0]);
@@ -66,9 +69,13 @@
                 .x(d => x(d.week))
                 .y(d => y(d.overall_gross));
 
-            const csvUrl = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_summary_2015_2025.csv";
+            const parseDate = d3.timeParse("%m/%d/%Y");
+            const parseDollar = d => +d.replace(/[\$,]/g, "");
 
-            d3.csv(csvUrl, function(row) {
+            const csvUrl_all = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_summary_2015_2025.csv";
+            const csvUrl_avg = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_average_2015_2019.csv";
+
+            d3.csv(csvUrl_all, function(row) {
                 row.year = +row.year;
                 row.week_begin_date = parseDate(row.week_begin_date);
                 row.week = +row.week_nbr;
@@ -76,25 +83,29 @@
                 return row;
             }).then(function(data) {
                 data = data.filter(d => d.week && !isNaN(d.overall_gross));
-                x.domain([1, 53]);
+                x.domain(d3.extent(data, d => d.week));
                 y.domain([0, d3.max(data, d => d.overall_gross)]);
 
-                g.append("g")
+                svg1.append("g")
                     .attr("transform", `translate(0,${height})`)
                     .call(d3.axisBottom(x).ticks(12).tickFormat(d => `Wk ${d}`));
 
-                g.append("g")
+                svg1.append("g")
                     .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
 
-                const dataByYear = d3.nest().key(d => d.year).entries(data);
-                const yearSet = dataByYear.map(d => d.key).sort();
-                const checkboxContainer = d3.select("#year-Checkboxes");
-                const pathGroup = g.append("g");
+                const recoveryYears = ["2021","2022","2023","2024","2025"];
 
+                const dataByYear = d3.nest().key(d => d.year).entries(data);
+                const yearSet = dataByYear
+                    .filter(d => recoveryYears.includes(String(d.key)))
+                    .map(d => d.key).sort();
+                const pathGroup = svg1.append("g");
+
+                const checkboxesContainer = d3.select("#year-checkboxes");
                 const currentVisible = new Set();
 
                 yearSet.forEach(year => {
-                    const label = checkboxContainer.append("label").style("margin-right", "12px");
+                    const label = checkboxesContainer.append("label").style("margin-right", "12px");
                     label.append("input")
                     .attr("type", "checkbox")
                     .attr("value", year)
@@ -113,21 +124,48 @@
                     label.append("span").text(` ${year}`);
                 });
 
+                checkboxesContainer.selectAll("input").each(function() {
+                    if (recoveryYears.includes(this.value)) {
+                        this.checked = true;
+                        drawLine(this.value);
+                        currentVisible.add(this.value)
+                    }
+                })
+
                 function drawLine(yearKey) {
                     const yearData = dataByYear.find(d => d.key === yearKey).values
                     .filter(d => d.week)
                     .sort((a, b) => a.week - b.week);
 
+                    // 2. set line colors
+                    const baseColor = getComputedStyle(document.documentElement).getPropertyValue("--tertiary-color").trim();
+                    const highlightColor = getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
+
+                    // 3. Append the path
                     const path = pathGroup.append("path")
                     .datum(yearData)
                     .attr("id", `line-${yearKey}`)
                     .attr("fill", "none")
-                    .attr("stroke", getColor(+yearKey))
+                    .attr("stroke", baseColor)
                     .attr("stroke-width", 2)
-                    .attr("d", line);
+                    .attr("d", line)
+                    // 4. On hover, change to yellow; on exit, restore original
+                    .on("mouseover", function() {
+                        d3.select(this)
+                        .raise()                   // bring to front
+                        .transition().duration(100)
+                        .attr("stroke", highlightColor)
+                        .attr("stroke-width", 4);
+                    })
+                    .on("mouseout", function() {
+                        d3.select(this)
+                        .transition().duration(100)
+                        .attr("stroke", baseColor)
+                        .attr("stroke-width", 2);
+                    });
 
+                    // 5. Animate the drawing
                     const totalLength = path.node().getTotalLength();
-
                     path
                     .attr("stroke-dasharray", totalLength + " " + totalLength)
                     .attr("stroke-dashoffset", totalLength)
@@ -136,16 +174,56 @@
                     .ease(d3.easeLinear)
                     .attr("stroke-dashoffset", 0);
                 }
+            });
 
-                // Optional: pre-select default years
-                const defaultYears = ["2020","2021","2022","2023","2024"];
-                checkboxContainer.selectAll("input").each(function() {
-                    if (defaultYears.includes(this.value)) {
-                        this.checked = true;
-                        drawLine(this.value);
-                        currentVisible.add(this.value);
-                    }
-                });
+            // Line and Area for second chart
+            const line2 = d3.line()
+            .x(d => x(d.week_nbr))
+            .y(d => y(d.avg_overall_gross));
+
+            const area2 = d3.area()
+            .x(d => x(d.week_nbr))
+            .y0(d => y(d.min_overall_gross))
+            .y1(d => y(d.max_overall_gross));
+
+
+            d3.csv(csvUrl_avg, d => ({
+            week_nbr: +d.week_nbr,
+            avg_overall_gross: +d.avg_overall_gross,
+            min_overall_gross: +d.min_overall_gross,
+            max_overall_gross: +d.max_overall_gross
+            })).then(data2 => {
+            x.domain(d3.extent(data2, d => d.week_nbr));
+            y.domain([0, d3.max(data2, d => d.max_overall_gross)]);
+
+            svg2.append("path")
+                .datum(data2)
+                .attr("fill", getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim())
+                .attr("opacity", 0.5)
+                .attr("d", area2);
+
+            svg2.append("path")
+                .datum(data2)
+                .attr("fill", "none")
+                .attr("stroke", getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim())
+                .attr("stroke-width", 2)
+                .attr("d", line2);
+
+            svg2.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).ticks(10).tickFormat(d => `Wk ${d}`));
+
+            svg2.append("g")
+                .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+            });
+
+            // Toggle behavior
+            let showingChart1 = true;
+            document.getElementById("toggleBtn").addEventListener("click", () => {
+                showingChart1 = !showingChart1;
+                d3.select("#chart1").style("opacity", showingChart1 ? 1 : 1);
+                d3.select("#chart2").style("opacity", showingChart1 ? 0.3 : 0);
+                document.getElementById("toggleBtn").textContent = showingChart1 ? "Click to remove the pre-Covid revenue" : "Click to include the pre-Covid revenue";
             });
         </script>
 
@@ -157,13 +235,26 @@
             In this graph we compare the trends noted in the years since 2020 to the average prior.
         </p>
         <p>
-            Select individual years to see how they compare to the pre-2020 average.
+            Again, make note of weeks with unusually high revenues and their star movies. 
+            Wicked, Barbie / Oppenhimer, ....
         </p>
-        <a href="scene1B.html" class="previous">&laquo; Previous</a>
+        <p>
+            Select individual years to see how they compare to the pre-2020 average, 
+            or remove the baseline information to isolate the 2021-2025 data.
+        </p>
+        <p>
+            Anwer the question in terms of overall box office revenue. 
+            Has the industry recovered? No (especially considering inflation). 
+            Seasonality trends still hold (higher summer & holiday revenue).
+            There are weeks here and there that rival and beat the 2015-2019 data, but the overall trend is still lower.
+        </p>
+        <a href="scene1.html" class="previous">&laquo; Previous</a>
         <a href="scene3.html" class="next">Next &raquo;</a>
 
     </div>
     
   </div>
+
+</body>
 
 </html>

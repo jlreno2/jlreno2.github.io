@@ -1,0 +1,213 @@
+<!-- Scene 1A investigates the pre-2020 trends and creates an average weekly revenue chart 
+ that we use to compare with post-2020 revenue -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .chart-container {
+      position: relative;
+      width: 900px;
+      height: 500px;
+    }
+    svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #chart1 {
+      opacity: 1;
+      z-index: 1;
+    }
+    #chart2 {
+      opacity: 0;
+      z-index: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Recovery of the Film Industry Post-Covid</h1>
+
+  <div class="topnav">
+        <a href="index.html">What Happened in 2020</a>
+        <a class="active" href="scene1.html">Pre-Pandemic Trends</a>
+        <a href="scene2.html">Recovery: Overall Box Office Revenue</a>
+        <a href="scene3.html">Recovery: Per Release Revenue</a>
+  </div>
+
+  <div class="container">
+    <div class="column" style="width:50%">
+      <div class="chart-container">
+        <svg id="chart1" width="900" height="500"></svg>
+        <svg id="chart2" width="900" height="500"></svg>
+      </div>
+
+      <div class="button-container">
+        <button id="toggleBtn">Click to see the average</button>
+      </div>
+            
+      <script>
+        const svg1 = d3.select("#chart1").append("g").attr("transform", "translate(80,40)");
+        const svg2 = d3.select("#chart2").append("g").attr("transform", "translate(80,40)");
+
+        const margin = { top: 40, right: 40, bottom: 50, left: 80 },
+              width = 900 - margin.left - margin.right,
+              height = 500 - margin.top - margin.bottom;
+
+        const x = d3.scaleLinear().range([0, width]);
+        const y = d3.scaleLinear().range([height, 0]);
+
+        const line = d3.line()
+          .x(d => x(d.week))
+          .y(d => y(d.overall_gross));
+
+        const parseDate = d3.timeParse("%m/%d/%Y");
+        const parseDollar = d => +d.replace(/[\$,]/g, "");
+
+        const csvUrl1 = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_summary_2015_2025.csv";
+
+        d3.csv(csvUrl1, function(row) {
+          row.year = +row.year;
+          row.week_begin_date = parseDate(row.week_begin_date);
+          row.week = +row.week_nbr;
+          row.overall_gross = parseDollar(row.overall_gross);
+          return row;
+        }).then(function(data) {
+          data = data.filter(d => d.week && !isNaN(d.overall_gross));
+          x.domain(d3.extent(data, d => d.week));
+          y.domain([0, d3.max(data, d => d.overall_gross)]);
+
+          svg1.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).ticks(12).tickFormat(d => `Wk ${d}`));
+
+          svg1.append("g")
+            .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+
+          const dataByYear = d3.nest().key(d => d.year).entries(data);
+          const yearSet = dataByYear.map(d => d.key).sort();
+          const pathGroup = svg1.append("g");
+
+          const baselineYears = ["2015","2016","2017","2018","2019"];
+          baselineYears.forEach(year => {
+            drawLine(year);
+          });
+
+          function drawLine(yearKey) {
+            const yearData = dataByYear.find(d => d.key === yearKey).values
+              .filter(d => d.week)
+              .sort((a, b) => a.week - b.week);
+
+            // 2. set line colors
+            const baseColor = getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim();
+            const highlightColor = getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
+
+            // 3. Append the path
+            const path = pathGroup.append("path")
+              .datum(yearData)
+              .attr("id", `line-${yearKey}`)
+              .attr("fill", "none")
+              .attr("stroke", baseColor)
+              .attr("stroke-width", 2)
+              .attr("d", line)
+              // 4. On hover, change to yellow; on exit, restore original
+              .on("mouseover", function() {
+                d3.select(this)
+                  .raise()                   // bring to front
+                  .transition().duration(100)
+                  .attr("stroke", highlightColor)
+                  .attr("stroke-width", 4);
+              })
+              .on("mouseout", function() {
+                d3.select(this)
+                  .transition().duration(100)
+                  .attr("stroke", baseColor)
+                  .attr("stroke-width", 2);
+              });
+
+            // 5. Animate the drawing
+            const totalLength = path.node().getTotalLength();
+            path
+              .attr("stroke-dasharray", totalLength + " " + totalLength)
+              .attr("stroke-dashoffset", totalLength)
+              .transition()
+              .duration(1500)
+              .ease(d3.easeLinear)
+              .attr("stroke-dashoffset", 0);
+          }
+        });
+
+        // Line and Area for second chart
+        const line2 = d3.line()
+          .x(d => x(d.week_nbr))
+          .y(d => y(d.avg_overall_gross));
+
+        const area2 = d3.area()
+          .x(d => x(d.week_nbr))
+          .y0(d => y(d.min_overall_gross))
+          .y1(d => y(d.max_overall_gross));
+
+        const csvUrl2 = "https://raw.githubusercontent.com/jlreno2/jlreno2.github.io/main/weekly_box_office_average_2015_2019.csv";
+
+        d3.csv(csvUrl2, d => ({
+          week_nbr: +d.week_nbr,
+          avg_overall_gross: +d.avg_overall_gross,
+          min_overall_gross: +d.min_overall_gross,
+          max_overall_gross: +d.max_overall_gross
+        })).then(data2 => {
+          x.domain(d3.extent(data2, d => d.week_nbr));
+          y.domain([0, d3.max(data2, d => d.max_overall_gross)]);
+
+          svg2.append("path")
+            .datum(data2)
+            .attr("fill", getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim())
+            .attr("opacity", 0.5)
+            .attr("d", area2);
+
+          svg2.append("path")
+            .datum(data2)
+            .attr("fill", "none")
+            .attr("stroke", getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim())
+            .attr("stroke-width", 2)
+            .attr("d", line2);
+
+          svg2.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).ticks(10).tickFormat(d => `Wk ${d}`));
+
+          svg2.append("g")
+            .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+        });
+
+        // Toggle behavior
+        let showingChart1 = true;
+        document.getElementById("toggleBtn").addEventListener("click", () => {
+          showingChart1 = !showingChart1;
+          d3.select("#chart1").style("opacity", showingChart1 ? 1 : 0);
+          d3.select("#chart2").style("opacity", showingChart1 ? 0 : 1);
+          document.getElementById("toggleBtn").textContent = showingChart1 ? "Click to see the average" : "Click to see each line";
+        });
+      </script>
+    </div>
+
+    <!-- Next we'll add text about the "immediate" pre-during-post covid timeline -->
+    <div class="column"> 
+      <p>
+        Discuss historic trendlines.
+        Discuss seasonality of movies (summer, valentines day, thanksgiving & christmas).
+        Make note of especially high earning weeks being due to especially high earning movies.
+      </p>
+      <p>
+        Discuss the beginnings of recovery in 2021. Top earning movie.
+      </p>
+      
+      <a href="index.html" class="previous">&laquo; Previous</a>
+      <a href="scene2.html" class="next">Next &raquo;</a>
+
+    </div>
+
+  </div>
+</body>
+</html>
