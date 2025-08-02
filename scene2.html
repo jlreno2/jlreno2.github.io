@@ -132,89 +132,86 @@
                     }
                 })
 
+                // Draw lines
                 function drawLine(yearKey) {
                     const yearData = dataByYear.find(d => d.key === yearKey).values
                     .filter(d => d.week)
                     .sort((a, b) => a.week - b.week);
 
-                    // 2. set line colors
                     const baseColor = getComputedStyle(document.documentElement).getPropertyValue("--tertiary-color").trim();
                     const highlightColor = getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
 
-                    // 3. Append the path
                     const path = pathGroup.append("path")
-                    .datum(yearData)
-                    .attr("id", `line-${yearKey}`)
-                    .attr("fill", "none")
-                    .attr("stroke", baseColor)
-                    .attr("stroke-width", 2)
-                    .attr("d", line)
-                    // 4. On hover, change to yellow; on exit, restore original
-                    .on("mouseover", function() {
-                        d3.select(this)
-                        .raise()                   // bring to front
-                        .transition().duration(100)
-                        .attr("stroke", highlightColor)
-                        .attr("stroke-width", 4);
-                    })
-                    .on("mouseout", function() {
-                        d3.select(this)
-                        .transition().duration(100)
+                        .datum(yearData)
+                        .attr("id", `line-${yearKey}`)
+                        .attr("fill", "none")
                         .attr("stroke", baseColor)
-                        .attr("stroke-width", 2);
-                    });
+                        .attr("stroke-width", 2)
+                        .attr("d", line)
+                        // 4. On hover, change to yellow; on exit, restore original
+                        .on("mouseover", function() {
+                            d3.select(this)
+                                .raise()
+                                .transition().duration(100)
+                                .attr("stroke", highlightColor)
+                                .attr("stroke-width", 4);
+                        })
+                        .on("mouseout", function() {
+                            d3.select(this)
+                                .transition().duration(100)
+                                .attr("stroke", baseColor)
+                                .attr("stroke-width", 2);
+                        });
 
-                    // 5. Animate the drawing
                     const totalLength = path.node().getTotalLength();
                     path
-                    .attr("stroke-dasharray", totalLength + " " + totalLength)
-                    .attr("stroke-dashoffset", totalLength)
-                    .transition()
-                    .duration(1500)
-                    .ease(d3.easeLinear)
-                    .attr("stroke-dashoffset", 0);
+                        .attr("stroke-dasharray", totalLength + " " + totalLength)
+                        .attr("stroke-dashoffset", totalLength)
+                        .transition()
+                        .duration(1500)
+                        .ease(d3.easeLinear)
+                        .attr("stroke-dashoffset", 0);
                 }
             });
 
             // Line and Area for second chart
             const line2 = d3.line()
-            .x(d => x(d.week_nbr))
-            .y(d => y(d.avg_overall_gross));
+                .x(d => x(d.week_nbr))
+                .y(d => y(d.avg_overall_gross));
 
             const area2 = d3.area()
-            .x(d => x(d.week_nbr))
-            .y0(d => y(d.min_overall_gross))
-            .y1(d => y(d.max_overall_gross));
-
+                .x(d => x(d.week_nbr))
+                .y0(d => y(d.min_overall_gross))
+                .y1(d => y(d.max_overall_gross));
 
             d3.csv(csvUrl_avg, d => ({
-            week_nbr: +d.week_nbr,
-            avg_overall_gross: +d.avg_overall_gross,
-            min_overall_gross: +d.min_overall_gross,
-            max_overall_gross: +d.max_overall_gross
+                week_nbr: +d.week_nbr,
+                avg_overall_gross: +d.avg_overall_gross,
+                min_overall_gross: +d.min_overall_gross,
+                max_overall_gross: +d.max_overall_gross
             })).then(data2 => {
-            x.domain(d3.extent(data2, d => d.week_nbr));
-            y.domain([0, d3.max(data2, d => d.max_overall_gross)]);
+                x.domain(d3.extent(data2, d => d.week_nbr));
+                y.domain([0, d3.max(data2, d => d.max_overall_gross)]);
 
-            svg2.append("path")
-                .datum(data2)
-                .attr("fill", getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim())
-                .attr("opacity", 0.5)
-                .attr("d", area2);
+                svg2.append("path")
+                    .datum(data2)
+                    .attr("fill", getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim())
+                    .attr("opacity", 0.5)
+                    .attr("d", area2);
 
-            svg2.append("path")
-                .datum(data2)
-                .attr("fill", "none")
-                .attr("stroke", getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim())
-                .attr("stroke-width", 2)
-                .attr("d", line2);
+                svg2.append("path")
+                    .datum(data2)
+                    .attr("fill", "none")
+                    .attr("stroke", getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim())
+                    .attr("stroke-width", 2)
+                    .attr("d", line2);
 
-            svg2.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x).ticks(10).tickFormat(d => `Wk ${d}`));
+                svg2.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x).ticks(10).tickFormat(d => `Wk ${d}`));
 
-            svg2.append("g")
-                .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+                svg2.append("g")
+                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
             });
 
             // Toggle behavior
