@@ -115,8 +115,7 @@
                     .style("opacity", 0);
 
                 var mouseover = function(d) {
-                    tooltip.style("opacity", 1)
-                        .style("opacity", 1);
+                    tooltip.style("opacity", 1);
                     d3.select(this)
                         .classed("hovered", true);
                 };
@@ -202,7 +201,23 @@
 
         <div class="column" style="width:50%">
             <p>
-                This is the third scene. Wohoo
+                Here, we examine the average per-release weekly revenue pre- and post-2020, along with the number of releases available
+                in each given week. In this chart, the size of the circle on the graph represents the number of releases - smaller dots means 
+                there were fewer releases in theaters that week. Hover your mouse over circles to see more information on that week. 
+            </p>
+            <p>
+                A new pattern is evident: the number of releases in theaters each week in the post-2020 years is far fewer than pre-2020 averages.
+                In fact, the average number of available releases weekly between 2015-2019 was 110, while that number drops to 63 for 2022-2025 weekly averages.
+                Additionally, it is clear that the pre-2020 average revenue per release is not higher than that post-2020. 
+                In the winter (beginning of year) and autumn periods - which typically have lower overall revenue - we see that pre- and post-2020 
+                averages per release are similar. But in the summer, the post-2020 averages are much higher.  
+            </p>
+            <p>
+                So, again, <b> has the domestic box office recovered? </b>
+                With this new look, I believe the answer can be revised to a "Yes", with caveats. Yes, because when COVID-19 shutdowns forced
+                audiences home, the streaming platforms looked like a possible permanent threat to theaters. However, we can see that audiences
+                are clearly eager to see the films that are being released. Overall, the industry remains lower in total box office revenue, 
+                but the fewer movies are raking in more money than ever. 
             </p>
 
         <a href="scene2.html" class="previous">&laquo; Previous</a>

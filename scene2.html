@@ -80,6 +80,7 @@
                 row.year = +row.year;
                 row.week_begin_date = parseDate(row.week_begin_date);
                 row.week = +row.week_nbr;
+                row.top_release = row.top_release
                 row.overall_gross = parseDollar(row.overall_gross);
                 return row;
             }).then(function(data) {
@@ -133,11 +134,91 @@
                     }
                 })
 
+                // Add annotations         
+                function drawAnnotations(data, g, x, y) {
+                const events = [
+                    {
+                        type: d3.annotationXYThreshold,
+                        title: "Barbenheimer",
+                        label: "The highest earning week post-2020 still is lower than several other highs pre-2020.",
+                        date: new Date(2023, 6, 21), // 7/21/2023
+                        dx: -1,
+                        dy: -10,
+                        wrap: 180,
+                        connector: {
+                            end: "dot"
+                        }
+                    },
+                    {
+                        type: d3.annotationCalloutCircle,
+                        title: "Sluggish Holidays",
+                        label: "For the season of historically peak revenue, post-2020 holiday revenue has struggled to meet former highs",
+                        date: new Date(2024, 11, 1), 
+                        dx: -10,
+                        dy: -120,
+                        wrap: 160,
+                        subject: {
+                            radius: 110
+                        }
+                    },
+                    {
+                        type: d3.annotationCalloutCircle,
+                        title: "Summer Boom",
+                        label: "The most recovered seasonal pattern in the post-2020 years is a sustained increase in weekly revenue in the summer",
+                        date: new Date(2024, 5, 21), // 2024 ~ Week 25
+                        dx: -75,
+                        dy: -120,
+                        wrap: 180,
+
+                        subject: {
+                            radius: 100
+                        }
+                    }
+                ]
+                const annotations = events.map(ev => {
+                    const closest = data.reduce((a, b) =>
+                    Math.abs(b.week_begin_date - ev.date) < Math.abs(a.week_begin_date - ev.date) ? b : a
+                    );     
+                    return {
+                        note: {
+                            label: ev.label,
+                            title: ev.title,
+                            wrap: ev.wrap
+                        },
+                        type: ev.type,
+                        x: x(closest.week),
+                        y: y(closest.overall_gross),
+                        dx: ev.dx,
+                        dy: ev.dy,
+                        subject: ev.subject,
+                        connector: ev.connector
+                    };
+                });
+                const makeAnnotations = d3.annotation()
+                    .notePadding(10)
+                    .annotations(annotations);
+                const annotationGroup = svg1.append("g")
+                    .attr("class", "annotation-group")
+                    .call(makeAnnotations);
+                annotationGroup.lower();
+                }                    
+                
+                // Flag for if annotations have been drawn yet
+                let annotationsDrawn = 0;
+                
+                // Define tooltip
+                var tooltip = d3.select("body")
+                    .append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+
                 // Draw lines
                 function drawLine(yearKey) {
                     const yearData = dataByYear.find(d => d.key === yearKey).values
-                    .filter(d => d.week)
-                    .sort((a, b) => a.week - b.week);
+                        .filter(d => d.week)
+                        .sort((a, b) => a.week - b.week);
+                    
+                    const maxWeek = yearData.reduce((a, b) => (a.overall_gross > b.overall_gross ? a : b));
 
                     const baseColor = getComputedStyle(document.documentElement).getPropertyValue("--tertiary-color").trim();
                     const highlightColor = getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
@@ -156,12 +237,22 @@
                                 .transition().duration(100)
                                 .attr("stroke", highlightColor)
                                 .attr("stroke-width", 4);
+                            tooltip.style("opacity",1);
+                        })
+                        .on("mousemove",function() {
+                            tooltip.html(`<strong>Year:</strong> ${yearKey}<br/>
+                                        <strong>Best Week:</strong> Wk ${maxWeek.week}<br/>
+                                        <strong>Best Week Revenue:</strong> $${(maxWeek.overall_gross / 1e6).toFixed(1)}M<br/>
+                                        <strong>Best Week Top Release:</strong> ${maxWeek.top_release}`)
+                                .style("left", (event.pageX + 20) + "px")
+                                .style("top", (event.pageY + 20) + "px");
                         })
                         .on("mouseout", function() {
                             d3.select(this)
                                 .transition().duration(100)
                                 .attr("stroke", baseColor)
                                 .attr("stroke-width", 2);
+                            tooltip.style("opacity", 0);
                         });
 
                     const totalLength = path.node().getTotalLength();
@@ -171,7 +262,13 @@
                         .transition()
                         .duration(1500)
                         .ease(d3.easeLinear)
-                        .attr("stroke-dashoffset", 0);
+                        .attr("stroke-dashoffset", 0)
+                        .on("end", () => {
+                            if (annotationsDrawn === 0) {
+                            drawAnnotations(data, svg1, x, y);
+                            annotationsDrawn = 1;
+                            }
+                        });
                 }
             });
 
@@ -227,24 +324,35 @@
 
     </div>
 
-    <!-- Here is our paragraph explaining the 2021 onward -->
+    <!-- Explaining trents 2021 onward / Initial answer to our question -->
     <div class="column" style="width:50%">
         <p>
-            In this graph we compare the trends noted in the years since 2020 to the average prior.
+            In this graph we compare the trends noted in the years since 2020 to the pre-2020 averages. 
+            Note that 2021's slow start was due to theaters staying closed, but that years 2022 onward have 
+            maintained seasonal trends to a lesser extent than pre-2020 years.
         </p>
         <p>
-            Again, make note of weeks with unusually high revenues and their star movies. 
-            Wicked, Barbie / Oppenhimer, ....
+            End of year / holiday weeks continue to see spikes compared to fall weekly averages, but to a smaller scale. 
+            Instead of the clear high-revenue period for the year, the season matches closer to summer. 
         </p>
         <p>
-            Select individual years to see how they compare to the pre-2020 average, 
-            or remove the baseline information to isolate the 2021-2025 data.
+            We continue to see spikes when there are blockbuster releases. 
+            For example, the co-releases of Barbie and Oppenheimer in the summer of 2023, and Wicked over the holidays in 2024.
+            However, these blockbusters are not creating new high-revenue weeks versus the pre-2020 weekly revenues.             
         </p>
         <p>
-            Anwer the question in terms of overall box office revenue. 
-            Has the industry recovered? No (especially considering inflation). 
-            Seasonality trends still hold (higher summer & holiday revenue).
-            There are weeks here and there that rival and beat the 2015-2019 data, but the overall trend is still lower.
+            Having examined the weekly revenues pre- and post-2020, an answer to our initial question on recovery may start to form.
+            While there are certainly weeks that surpass pre-2020 performance, the overall patterns remain consistently lower, 
+            even into 2025. If we took inflation into account, the numbers would look even lower for the post-2020 
+            years compared to the pre-2020 years.
+        </p>
+        <p>
+            So, <b> has the domestic box office recovered? </b> 
+            It's easy to say no - the industry seems to be facing a permanently altered landscape. 
+            But there's another side to the story. Not only were theaters shuttered during 2020, but many film productions were halted.
+            Additionally, COVID-19 was followed a few years later by months-long strikes in the writers and actors guilds, marking
+            another halt in production. Given how long it takes to produce movies, the industry may be struggling outside of audiences.
+            How does the story change if we examine the revenue on a <i>per release</i> basis?
         </p>
         <a href="scene1.html" class="previous">&laquo; Previous</a>
         <a href="scene3.html" class="next">Next &raquo;</a>
