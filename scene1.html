@@ -169,7 +169,10 @@
                   date: new Date(2016, 7, 5), // 8/5/2016
                   dx: 25,
                   dy: -25,
-                  wrap: 180
+                  wrap: 180,
+                  connector: {
+                      end: "dot"
+                  }
                 },
                 {
                   type: d3.annotationXYThreshold,
@@ -178,7 +181,10 @@
                   date: new Date(2017, 2, 17), // 3/17/2017
                   dx: -1,
                   dy: -60,
-                  wrap: 140
+                  wrap: 140,
+                  connector: {
+                      end: "dot"
+                  }
                 }
               ]
               const annotations = events.map(ev => {
@@ -196,7 +202,8 @@
                     y: y(closest.overall_gross),
                     dx: ev.dx,
                     dy: ev.dy,
-                    subject: ev.subject
+                    subject: ev.subject,
+                    connector: ev.connector
                 };
               });
               const makeAnnotations = d3.annotation()
