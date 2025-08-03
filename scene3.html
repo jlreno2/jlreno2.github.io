@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -44,11 +45,9 @@
 
             function getColor(year) {
                 if (year <= 2019) return getComputedStyle(document.documentElement).getPropertyValue("--secondary-color").trim();
-                else if (year === 2020) return getComputedStyle(document.documentElement).getPropertyValue("--accent-color").trim();
+                else if (year === 2020) return getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
                 else return getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim();  
             }
-
-            const highlightColor = getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
 
             const margin = { top: 40, right: 40, bottom: 50, left: 80 },
                     width = 900 - margin.left - margin.right,

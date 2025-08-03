@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
   <link rel="stylesheet" href="styles.css">
   <style>
     .chart-container {
@@ -91,20 +92,24 @@
           const pathGroup = svg1.append("g");
 
           const baselineYears = ["2015","2016","2017","2018","2019"];
-          baselineYears.forEach(year => {
+          baselineYears.forEach((year) => {
             drawLine(year);
           });
 
+          // Flag for if annotations have been drawn yet
+          let annotationsDrawn = 0;
+
+          // Main function for first graph
           function drawLine(yearKey) {
             const yearData = dataByYear.find(d => d.key === yearKey).values
               .filter(d => d.week)
               .sort((a, b) => a.week - b.week);
 
-            // 2. set line colors
+            // Set line colors
             const baseColor = getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim();
             const highlightColor = getComputedStyle(document.documentElement).getPropertyValue("--highlight-color").trim();
 
-            // 3. Append the path
+            // Append the path
             const path = pathGroup.append("path")
               .datum(yearData)
               .attr("id", `line-${yearKey}`)
@@ -112,10 +117,10 @@
               .attr("stroke", baseColor)
               .attr("stroke-width", 2)
               .attr("d", line)
-              // 4. On hover, change to yellow; on exit, restore original
+              // On hover, change to yellow; on exit, restore original
               .on("mouseover", function() {
                 d3.select(this)
-                  .raise()                   // bring to front
+                  .raise()
                   .transition().duration(100)
                   .attr("stroke", highlightColor)
                   .attr("stroke-width", 4);
@@ -125,9 +130,68 @@
                   .transition().duration(100)
                   .attr("stroke", baseColor)
                   .attr("stroke-width", 2);
-              });
+              })
 
-            // 5. Animate the drawing
+            // Add annotations         
+            function drawAnnotations(data, g, x, y) {
+              const events = [
+                {
+                  type: d3.annotationCalloutCircle,
+                  title: "Holiday Spikes",
+                  label: "Highest annual revenue around year-end holidays",
+                  date: new Date(2017, 11, 22), // week 51 2017
+                  dx: -75,
+                  dy: -10,
+                  subject: {
+                    radius: 75
+                  },
+                  wrap: 140
+                },
+                {
+                  type: d3.annotationXYThreshold,
+                  title: "High Performer",
+                  label: "'Suicide Squad' in 2016 drove higher-than-average revenue for week 32",
+                  date: new Date(2016, 7, 5), // 8/5/2016
+                  dx: 25,
+                  dy: -25,
+                  wrap: 180
+                },
+                {
+                  type: d3.annotationXYThreshold,
+                  title: "High Performer",
+                  label: "'Beauty and the Beast' in 2017 drove higher-than-average revenue for the week 11",
+                  date: new Date(2017, 2, 17), // 3/17/2017
+                  dx: -1,
+                  dy: -60,
+                  wrap: 140
+                }
+              ]
+              const annotations = events.map(ev => {
+                const closest = data.reduce((a, b) =>
+                  Math.abs(b.week_begin_date - ev.date) < Math.abs(a.week_begin_date - ev.date) ? b : a
+                );     
+                return {
+                    note: {
+                        label: ev.label,
+                        title: ev.title,
+                        wrap: ev.wrap
+                    },
+                    type: ev.type,
+                    x: x(closest.week),
+                    y: y(closest.overall_gross),
+                    dx: ev.dx,
+                    dy: ev.dy,
+                    subject: ev.subject
+                };
+              });
+              const makeAnnotations = d3.annotation()
+                  .notePadding(10)
+                  .annotations(annotations);
+              svg1.append("g")
+                  .attr("class", "annotation-group")
+                  .call(makeAnnotations);
+            }                    
+            
             const totalLength = path.node().getTotalLength();
             path
               .attr("stroke-dasharray", totalLength + " " + totalLength)
@@ -135,7 +199,13 @@
               .transition()
               .duration(1500)
               .ease(d3.easeLinear)
-              .attr("stroke-dashoffset", 0);
+              .attr("stroke-dashoffset", 0)
+              .on("end", () => {
+                if (annotationsDrawn === 0) {
+                  drawAnnotations(data, svg1, x, y);
+                  annotationsDrawn = 1;
+                }
+              });
           }
         });
 
@@ -171,7 +241,8 @@
             .attr("fill", "none")
             .attr("stroke", getComputedStyle(document.documentElement).getPropertyValue("--primary-color").trim())
             .attr("stroke-width", 2)
-            .attr("d", line2);
+            .attr("d", line2)
+            ;
 
           svg2.append("g")
             .attr("transform", `translate(0,${height})`)
@@ -192,15 +263,27 @@
       </script>
     </div>
 
-    <!-- Next we'll add text about the "immediate" pre-during-post covid timeline -->
+    <!-- Examine the seasonal patterns present pre-2020 -->
     <div class="column"> 
       <p>
-        Discuss historic trendlines.
-        Discuss seasonality of movies (summer, valentines day, thanksgiving & christmas).
-        Make note of especially high earning weeks being due to especially high earning movies.
+        To better understand revenue patterns during a calendar year, we examine data from 2015 - 2019. 
       </p>
       <p>
-        Discuss the beginnings of recovery in 2021. Top earning movie.
+        A few clear patterns emerge: 
+        <li>
+          On average, the highest earning weeks are at the end of the year in December, as studios capitalize on high spirits and extra free time around the holidays. 
+        </li>
+        <li>
+          A smaller bump in weekly revenue is seen around Thanksgiving for the same reasons.
+        </li>
+        <li>
+          The summer is also a period of high revenue. Kids are out of school and people see movies more often. 
+        </li>
+      </p>
+      <p>
+        If we examine the weekly averages across years, although each individual year may vary drasticly from week to week, patterns
+        across the years are less volitile. Weeks with extreme spikes are often due to single movie releases that do especially well. 
+        For example, the movies "Suicide Squad" in 2016 and "Beauty and the Best" in 2017 drove especially high revenue for their respective weeks. 
       </p>
       
       <a href="index.html" class="previous">&laquo; Previous</a>

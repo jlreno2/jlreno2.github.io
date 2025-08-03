@@ -2,6 +2,7 @@
 <head>
   <meta charset="utf-8">
   <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
   <link rel="stylesheet" href="styles.css">
     <!-- color palette 
       --primary-color: #023047;
@@ -53,34 +54,108 @@
                     return row;
                 }
                 }).then(function(data) {
-                data = data.filter(d => d && d.week_begin_date && !isNaN(d.overall_gross));
-                data.sort((a, b) => a.week_begin_date - b.week_begin_date);
-                x.domain(d3.extent(data, d => d.week_begin_date));
-                y.domain([0, d3.max(data, d => d.overall_gross)]);
+                    data = data.filter(d => d && d.week_begin_date && !isNaN(d.overall_gross));
+                    data.sort((a, b) => a.week_begin_date - b.week_begin_date);
+                    x.domain(d3.extent(data, d => d.week_begin_date));
+                    y.domain([0, d3.max(data, d => d.overall_gross)]);
 
-                g.append("g")
-                    .attr("transform", `translate(0,${height})`)
-                    .call(d3.axisBottom(x));
+                    g.append("g")
+                        .attr("transform", `translate(0,${height})`)
+                        .call(d3.axisBottom(x));
 
-                g.append("g")
-                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
-                
-                // Add line path with transition
-                const path = g.append("path")
-                    .datum(data)
-                    .attr("class", "line")
-                    .attr("d", line);
-                const totalLength = path.node().getTotalLength();
-                path.attr("stroke-dasharray",totalLength+" "+totalLength)
-                    .attr("stroke-dashoffset",totalLength)
-                    .transition()
-                    .duration(3000)
-                    .ease(d3.easeLinear)
-                    .attr("stroke-dashoffset",0);
+                    g.append("g")
+                        .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+                    
+                    // Add line path with transition
+                    const path = g.append("path")
+                        .datum(data)
+                        .attr("class", "line")
+                        .attr("d", line);
+                    const totalLength = path.node().getTotalLength();
+                    path.attr("stroke-dasharray",totalLength+" "+totalLength)
+                        .attr("stroke-dashoffset",totalLength)
+                        .transition()
+                        .duration(3000)
+                        .ease(d3.easeLinear)
+                        .attr("stroke-dashoffset",0)
+                        .on("end", () => {
+                            drawShutdownAnnotation(data, g, x, y);
+                        });
 
-                }).catch(function(error) {
-                console.error("Error loading CSV:", error);
+                    // Add annotations
+                    function drawShutdownAnnotation(data, g, x, y) {
+                        const events = [
+                            {
+                                type: d3.annotationCalloutCircle,
+                                title: "March 2020 Collapse",
+                                label: "Theaters nationwide shut down due to COVID-19",
+                                date: new Date(2020, 2, 15), // March 15, 2020
+                                dx: 30,
+                                dy: -50,
+                                subject: {
+                                    radius: 50
+                                }
+                            },
+                            {
+                                title: "Avengers: Endgame",
+                                label: "Week 17 of 2019 saw record revenue from 'Endgame'",
+                                date: new Date(2019, 3, 26), // April 26, 2019 
+                                dx: 25,
+                                dy: 0,
+                                connector: {
+                                    end: "dot"
+                                }
+                            },
+                            {
+                                title: "Summer Rebound",
+                                label: "Box office began recovering as theaters reopened",
+                                date: new Date(2021, 4, 28), // May 28, 2021: A Quiet Place Part II
+                                dx: -25,
+                                dy: -80,
+                                connector: {
+                                    end: "dot"
+                                }
+                            },
+                            {
+                                title: "Spider-Man Surge",
+                                label: "'No Way Home' drove an end-of-year spike in December",
+                                date: new Date(2021, 11, 17), // Dec 17, 2021
+                                dx: -50,
+                                dy: 40,
+                                connector: {
+                                    end: "dot"
+                                }
+                            }
+                        ]
+                        const annotations = events.map(ev => {
+                            const closest = data.reduce((a, b) =>
+                                Math.abs(b.week_begin_date - ev.date) < Math.abs(a.week_begin_date - ev.date) ? b : a
+                            );
+                            return {
+                                note: {
+                                    label: ev.label,
+                                    title: ev.title,
+                                    wrap: 220
+                                },
+                                x: x(closest.week_begin_date),
+                                y: y(closest.overall_gross),
+                                dx: ev.dx,
+                                dy: ev.dy,
+                                type: ev.type,
+                                connector: ev.connector,
+                                subject: ev.subject
+                            };
+                        });
+                        const makeAnnotations = d3.annotation()
+                            .type(d3.annotationXYThreshold) // annotationLabel
+                            .notePadding(10)
+                            .annotations(annotations);
+                        g.append("g")
+                            .attr("class", "annotation-group")
+                            .call(makeAnnotations);
+                    }                    
                 });
+
             </script>
         </div>
 
@@ -90,22 +165,23 @@
                 Theaters closed worldwide, box office revenue plummeted, and major studios were forced to rethink distribution strategies. 
                 One of the most significant shifts during this period was the increase in direct-to-streaming releases, as platforms such as Netflix 
                 grew massively. This change not only altered how audiences consumed films but also raised questions about the long-term role of theatrical releases.
-                Today, more than five years since the initial shutdowns, has the industry recovered?
             </p>
             <p>
+                <b>Today, more than five years since the initial shutdowns, has the industry recovered?</b>
                 This analysis explores weekly box office revenue before and after the pandemic to assess whether the film industry has rebounded, 
                 or if it is still navigating a permanently altered landscape.
             </p>
             <p>
                 We'll focus on domestic box office revenue for the United States. 
-                Data is sourced from ****WEBSITE HERE****
+                Data is sourced from: <a href="https://www.boxofficemojo.com/">Box Office Mojo</a>
             </p>
+            <p></p> 
             <p>
-                To start, here we'll call out the dates of initial shutdowns.
-            </p>
-            <p>
-                Point out the top earning movies in 2019. 
-                Discuss the beginnings of recovery in 2021 & first big-earning week.
+                To understand recovery, we first can examine the timeline of box office performance the year before, after, and during 2020.  
+                Domestic box office revenue during 2019 was high, with the year totalling over $11 million - the third highest year for domestic revenue ever. 
+                Weekly revenue started off good in 2020, but turned to near-zero in March when the country went on lockdown and theaters closed. 
+                It wasn't until June of 2021 that many movie theaters began to open again, and it took another several months before any week resembled the pre-pandemic revenue.
+                By the end of 2021, a big box-office hit in "Spider-Man: No Way Home" signaled the potential for a true recovery in the years to come.
             </p>
             <a href="scene1.html" class="next">Next &raquo;</a>
         </div>
