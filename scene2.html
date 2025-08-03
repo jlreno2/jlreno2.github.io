@@ -93,7 +93,16 @@
                     .call(d3.axisBottom(x).ticks(12).tickFormat(d => `Wk ${d}`));
 
                 svg1.append("g")
-                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`))
+                    .append("text")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", `rotate(-90)`)
+                    .attr("y", -60)
+                    .attr("x", -height / 2)
+                    .attr("dy", "1em")
+                    .style("fill", "#333")
+                    .style("font-size", "14px")
+                    .text("Weekly Gross Revenue");
 
                 const recoveryYears = ["2021","2022","2023","2024","2025"];
 
@@ -153,9 +162,9 @@
                         type: d3.annotationCalloutCircle,
                         title: "Sluggish Holidays",
                         label: "For the season of historically peak revenue, post-2020 holiday revenue has struggled to meet former highs",
-                        date: new Date(2024, 11, 1), 
+                        date: new Date(2024, 11, 6), 
                         dx: -10,
-                        dy: -120,
+                        dy: -200,
                         wrap: 160,
                         subject: {
                             radius: 110

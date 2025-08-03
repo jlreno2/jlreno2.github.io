@@ -79,7 +79,16 @@
 
                 svg1.append("g")
                     .attr("class", "y-axis")
-                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`).tickPadding(10));
+                    .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`).tickPadding(10))
+                    .append("text")
+                    .attr("text-anchor", "middle")
+                    .attr("transform", `rotate(-90)`)
+                    .attr("y", -60)
+                    .attr("x", -height / 2)
+                    .attr("dy", "1em")
+                    .style("fill", "#333")
+                    .style("font-size", "14px")
+                    .text("Weekly Revenue Per Release");
 
                 const dataByYear = d3.nest().key(d => d.year).entries(data);
                 const yearSet = dataByYear.map(d => d.key).sort();

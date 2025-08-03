@@ -57,7 +57,16 @@
                         .call(d3.axisBottom(x));
 
                     g.append("g")
-                        .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+                        .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`))
+                        .append("text")
+                        .attr("text-anchor", "middle")
+                        .attr("transform", `rotate(-90)`)
+                        .attr("y", -60)
+                        .attr("x", -height / 2)
+                        .attr("dy", "1em")
+                        .style("fill", "#333")
+                        .style("font-size", "14px")
+                        .text("Weekly Gross Revenue");
                     
                     // Add line path with transition
                     const path = g.append("path")
@@ -168,14 +177,15 @@
                 We'll focus on domestic box office revenue for the United States. 
                 Data is sourced from: <a href="https://www.boxofficemojo.com/">Box Office Mojo</a>
             </p>
-            <p></p> 
             <p>
                 To understand recovery, we first can examine the timeline of box office performance the year before, after, and during 2020.  
                 Domestic box office revenue during 2019 was high, with the year totalling over $11 million - the third highest year for domestic revenue ever. 
                 Weekly revenue started off good in 2020, but turned to near-zero in March when the country went on lockdown and theaters closed. 
+            </p>
+            <p>
                 It wasn't until June of 2021 that many movie theaters began to open again, and it took another several months before any week resembled the pre-pandemic revenue.
                 By the end of 2021, a big box-office hit in "Spider-Man: No Way Home" signaled the potential for a true recovery in the years to come.
-            </p>
+            </p> 
             <a href="scene1.html" class="next">Next &raquo;</a>
         </div>
         
