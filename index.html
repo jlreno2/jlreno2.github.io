@@ -18,14 +18,23 @@
     <div class="container">
         
         <div class="column" style="width:50%">
-            <svg width="900" height="500"></svg>
-            <script>
-                const svg = d3.select("svg"),
-                margin = { top: 40, right: 40, bottom: 50, left: 80 },
-                width = +svg.attr("width") - margin.left - margin.right,
-                height = +svg.attr("height") - margin.top - margin.bottom;
 
-                const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+            <div class="chart-container" style="position: relative; width: 100%; height: 500px;">
+                <svg id="chart" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 500px;"></svg>
+            </div>
+            
+            <script>
+                const svgElement = document.getElementById("chart");
+                const bounds = svgElement.getBoundingClientRect();
+
+                const margin = { top: 40, right: 40, bottom: 50, left: 80 },
+                    width = bounds.width - margin.left - margin.right,
+                    height = (bounds.height || 500) - margin.top - margin.bottom;
+                
+                const g = d3.select("#chart")
+                    .attr("viewBox", `0 0 ${bounds.width} ${bounds.height}`)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
 
                 const parseDate = d3.timeParse("%m/%d/%Y");
                 const parseDollar = d => +d.replace(/[\$,]/g, "");
@@ -137,7 +146,7 @@
                                 note: {
                                     label: ev.label,
                                     title: ev.title,
-                                    wrap: 220
+                                    wrap: 180
                                 },
                                 x: x(closest.week_begin_date),
                                 y: y(closest.overall_gross),

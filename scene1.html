@@ -7,11 +7,6 @@
   <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
   <link rel="stylesheet" href="styles.css">
   <style>
-    .chart-container {
-      position: relative;
-      width: 900px;
-      height: 500px;
-    }
     svg {
       position: absolute;
       top: 0;
@@ -39,10 +34,12 @@
   </div>
 
   <div class="container">
+
     <div class="column" style="width:50%">
-      <div class="chart-container">
-        <svg id="chart1" width="900" height="500"></svg>
-        <svg id="chart2" width="900" height="500"></svg>
+
+      <div class="chart-container" style="position: relative; width: 100%; height: 500px;">
+        <svg id="chart1" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 500px;"></svg>
+        <svg id="chart2" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 500px;"></svg>
       </div>
 
       <div class="button-container">
@@ -50,13 +47,21 @@
       </div>
             
       <script>
-        const svg1 = d3.select("#chart1").append("g").attr("transform", "translate(80,40)");
-        const svg2 = d3.select("#chart2").append("g").attr("transform", "translate(80,40)");
-
-        const margin = { top: 40, right: 40, bottom: 50, left: 80 },
-              width = 900 - margin.left - margin.right,
-              height = 500 - margin.top - margin.bottom;
-
+        const container = document.querySelector(".chart-container");
+        const bounds = container.getBoundingClientRect();
+        const margin = { top: 40, right: 40, bottom: 50, left: 80 };
+        let width = bounds.width - margin.left - margin.right;
+        let height = (bounds.height || 500) - margin.top - margin.bottom; 
+        
+        const svg1 = d3.select("#chart1")
+          .attr("viewBox", `0 0 ${bounds.width} ${bounds.height}`)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+        const svg2 = d3.select("#chart2")
+          .attr("viewBox", `0 0 ${bounds.width} ${bounds.height}`)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+        
         const x = d3.scaleLinear().range([0, width]);
         const y = d3.scaleLinear().range([height, 0]);
 
@@ -168,17 +173,15 @@
                   dy: -10,
                   subject: {
                     radius: 68
-                  },
-                  wrap: 140
+                  }
                 },
                 {
                   type: d3.annotationXYThreshold,
                   title: "High Performer",
-                  label: "'Suicide Squad' in 2016 drove higher-than-average revenue for week 32",
+                  label: "'Suicide Squad' in 2016 drove high revenue for week 32",
                   date: new Date(2016, 7, 5), // 8/5/2016
-                  dx: 25,
-                  dy: -25,
-                  wrap: 180,
+                  dx: 10,
+                  dy: -20,
                   connector: {
                       end: "dot"
                   }
@@ -186,11 +189,10 @@
                 {
                   type: d3.annotationXYThreshold,
                   title: "High Performer",
-                  label: "'Beauty and the Beast' in 2017 drove higher-than-average revenue for the week 11",
+                  label: "'Beauty and the Beast' in 2017 drove high revenue for the week 11",
                   date: new Date(2017, 2, 17), // 3/17/2017
-                  dx: -1,
-                  dy: -60,
-                  wrap: 140,
+                  dx: 0,
+                  dy: 175,
                   connector: {
                       end: "dot"
                   }
@@ -204,7 +206,7 @@
                     note: {
                         label: ev.label,
                         title: ev.title,
-                        wrap: ev.wrap
+                        wrap: 130
                     },
                     type: ev.type,
                     x: x(closest.week),
@@ -280,7 +282,16 @@
             .call(d3.axisBottom(x).ticks(10).tickFormat(d => `Wk ${d}`));
 
           svg2.append("g")
-            .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`));
+            .call(d3.axisLeft(y).tickFormat(d => `$${(d / 1e6).toFixed(0)}M`))
+            .append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", `rotate(-90)`)
+            .attr("y", -60)
+            .attr("x", -height / 2)
+            .attr("dy", "1em")
+            .style("fill", "#333")
+            .style("font-size", "14px")
+            .text("Weekly Gross Revenue");
         });
 
         // Toggle behavior
@@ -295,7 +306,7 @@
     </div>
 
     <!-- Examine the seasonal patterns present pre-2020 -->
-    <div class="column"> 
+    <div class="column" style="width: 50%"> 
       <p>
         To better understand revenue patterns during a calendar year, we examine data from 2015 - 2019. 
       </p>
